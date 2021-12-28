@@ -57,7 +57,7 @@ func Register(user model.User) error {
 	return err
 }
 
-func IsMoneyEnough(money int, name string) (bool, error) {
+func IsMoneyEnough(money float64, name string) (bool, error) {
 	Mymoey, err := dao.IsMoneyEnough(name)
 	if money > Mymoey {
 		return false, err
@@ -67,4 +67,12 @@ func IsMoneyEnough(money int, name string) (bool, error) {
 func Password(user model.User) error {
 	err := dao.UpdateUser(user)
 	return err
+}
+func SelectMoneyByName(name string) (float64, error) {
+	Money, err := dao.SelectMoneyByName(name)
+	return Money, err
+}
+func GetRecordByName(name string, id int) ([]model.Record, error) {
+	Record, err := dao.GetRecordByName(name, id)
+	return Record, err
 }

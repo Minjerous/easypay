@@ -1,6 +1,8 @@
 package dao
 
-import "easypay/model"
+import (
+	"easypay/model"
+)
 
 func InsertRecord(record model.Record) error {
 	sqlStr := "INSERT INTO record(pid, txt, recordtime) values( ?, ?, ?);"
@@ -25,7 +27,27 @@ func GetRecordByPid(Pid int) ([]model.Record, error) {
 	for rows.Next() {
 		var record model.Record
 
-		err = rows.Scan(&record.Txt, &record.Time)
+		err = rows.Scan(&record.Id, &record.Txt, &record.Pid, &record.Time)
+		if err != nil {
+			return nil, err
+		}
+
+		Record = append(Record, record)
+	}
+
+	return Record, nil
+}
+func GetRecordByName(username string, id int) ([]model.Record, error) {
+	var Record []model.Record
+	rows, err := DB.Query("select *from record where txt like ? and  pid =?", "%"+username+"%", id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var record model.Record
+
+		err = rows.Scan(&record.Id, &record.Txt, &record.Pid, &record.Time)
 		if err != nil {
 			return nil, err
 		}

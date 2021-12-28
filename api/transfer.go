@@ -14,7 +14,7 @@ func transfer(ctx *gin.Context) {
 
 	name := ctx.PostForm("name")
 	moneyNum := ctx.PostForm("num")
-	money, _ := strconv.Atoi(moneyNum)
+	money, err := strconv.ParseFloat(moneyNum, 32)
 
 	if money < 0 {
 		tool.RespErrorWithData(ctx, "不能转负数")
@@ -31,12 +31,12 @@ func transfer(ctx *gin.Context) {
 	}
 
 	if !flag {
-		tool.RespErrorWithData(ctx, "余额不足")
+		tool.RespErrorWithData(ctx, "余额不足，请充值")
 		return
 	}
 	//对象
 
-	txt := username + "转了你" + moneyNum + "元"
+	txt := username + "向转你转了" + moneyNum + "元"
 	user := model.User{
 		Username: name,
 		Money:    money,

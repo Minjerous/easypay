@@ -13,13 +13,15 @@ import (
 //登入
 func help(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
-		"help接口(GET)": "http://106.55.225.88:8020/help",
-		"注册接口(POST)":  "http://106.55.225.88:8020/register               (POSTFROM)有 password  username  ",
-		"登入接口(POST)":  "http://106.55.225.88:8020/login                  (POSTFROM)有 password  username ",
-		"改密接口(POST)":  "http://106.55.225.88:8020/user/changepassword ",
-		"充值接口(POST)":  "http://106.55.225.88:8020/user/topup             (POSTFROM) key : num",
-		"转账接口(POST)":  "http://106.55.225.88:8020/user/transfer          (POSTFROM) key : num；key : name",
-		"备注接口(GET)h":  "http://106.55.225.88:8020/user/getrecord",
+		"help接口(GET)":     "http://106.55.225.88:8020/help",
+		"注册接口(POST)":      "http://106.55.225.88:8020/register               (POSTFROM)有 password  username  ",
+		"登入接口(POST)":      "http://106.55.225.88:8020/login                  (POSTFROM)有 password  username ",
+		"改密接口(PUT)":       "http://106.55.225.88:8020/user/changepassword ",
+		"充值接口(POST)":      "http://106.55.225.88:8020/user/topup             (POSTFROM) key : num",
+		"转账接口(POST)":      "http://106.55.225.88:8020/user/transfer          (POSTFROM) key : num；key : name",
+		"备注接口(GET)":       "http://106.55.225.88:8020/user/get_all_record",
+		"查询确定对象的交记录(GET)": "http://106.55.225.88:8020/user/get_exact_record   key: name     (模糊查询)",
+		"查询余额(GET)":       "http://106.55.225.88:8020/user/get_money",
 	})
 }
 func login(ctx *gin.Context) {
@@ -86,6 +88,34 @@ func register(ctx *gin.Context) {
 		tool.RespSuccessful(ctx)
 	}
 }
+
+//查询和特定对象的交易  若没有权限则查询失败
+func getRecordWithPeople(ctx *gin.Context) {
+	iUsername, _ := ctx.Get("username")
+	username := iUsername.(string)
+	Id, err := service.SelectIdByUsername(username)
+
+	if err != nil {
+		fmt.Println(err)
+		tool.RespErrorWithData(ctx, "查询失败")
+		return
+	}
+	name := ctx.PostForm("name")
+	record, err := service.GetRecordByName(name, Id)
+	if err != nil {
+		fmt.Println(err)
+		tool.RespErrorWithData(ctx, "查询失败")
+		return
+	}
+	if record == nil {
+		tool.RespErrorWithData(ctx, "无交易记录")
+		return
+	} else {
+		tool.RespSuccessfulWithData(ctx, record)
+		return
+	}
+	tool.RespSuccessfulWithData(ctx, record)
+}
 func getRecord(ctx *gin.Context) {
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
@@ -102,6 +132,21 @@ func getRecord(ctx *gin.Context) {
 		return
 	}
 	tool.RespAllRecord(ctx, record)
+}
+
+//查询余额
+func getMoney(ctx *gin.Context) {
+	iUsername, _ := ctx.Get("username")
+	username := iUsername.(string)
+	money, err := service.SelectMoneyByName(username)
+	if err != nil {
+		fmt.Print(err)
+		tool.RespInternalError(ctx)
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"您的余额为": money,
+	})
 }
 func changePassword(ctx *gin.Context) {
 	username := ctx.PostForm("username")

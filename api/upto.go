@@ -12,7 +12,7 @@ import (
 
 func topUp(ctx *gin.Context) {
 	moneyNum := ctx.PostForm("money")
-	money, err := strconv.Atoi(moneyNum)
+	money, err := strconv.ParseFloat(moneyNum, 32)
 	if err != nil {
 		tool.RespErrorWithData(ctx, "stou")
 		fmt.Println("err is", err)
@@ -22,7 +22,7 @@ func topUp(ctx *gin.Context) {
 	iUsername, _ := ctx.Get("username")
 	username := iUsername.(string)
 
-	txt := "你充值了" + moneyNum + "元"
+	txt := username + "充值了" + moneyNum + "元"
 	user := model.User{
 		Username: username,
 		Money:    money,
