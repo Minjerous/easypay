@@ -13,15 +13,18 @@ import (
 //登入
 func help(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
-		"help接口(GET)":     "http://106.55.225.88:8020/help",
-		"注册接口(POST)":      "http://106.55.225.88:8020/register               (POSTFROM)有 password  username  ",
-		"登入接口(POST)":      "http://106.55.225.88:8020/login                  (POSTFROM)有 password  username ",
-		"改密接口(PUT)":       "http://106.55.225.88:8020/user/changepassword ",
-		"充值接口(POST)":      "http://106.55.225.88:8020/user/topup             (POSTFROM) key : num",
-		"转账接口(POST)":      "http://106.55.225.88:8020/user/transfer          (POSTFROM) key : num；key : name",
-		"备注接口(GET)":       "http://106.55.225.88:8020/user/get_all_record",
-		"查询确定对象的交记录(GET)": "http://106.55.225.88:8020/user/get_exact_record   key: name     (模糊查询)",
-		"查询余额(GET)":       "http://106.55.225.88:8020/user/get_money",
+		"A测试用户":                  "lmj:12345678  ddz:12345678",
+		"help接口(GET)":            "http://106.55.225.88:8020/help",
+		"注册接口(POST)":             "http://106.55.225.88:8020/register               (POSTFROM)有 password  username  ",
+		"登入接口(POST)":             "http://106.55.225.88:8020/login                  (POSTFROM)有 password  username ",
+		"改密接口(PUT)":              "http://106.55.225.88:8020/user/changepassword ",
+		"充值接口(POST)":             "http://106.55.225.88:8020/user/topup             (POSTFROM) key : num",
+		"转账接口(POST)":             "http://106.55.225.88:8020/user/transfer          (POSTFROM) key : num；key : name",
+		"备注接口(GET)":              "http://106.55.225.88:8020/user/get_all_record",
+		"查询确定对象的交记录(GET)":        "http://106.55.225.88:8020/user/get_exact_record   key: name     (模糊查询)",
+		"查询余额(GET)":              "http://106.55.225.88:8020/user/get_money",
+		"登入jwt(POST)":            "http://106.55.225.88:8020/login_with_jwt                (POSTFROM)有 password  username",
+		"help WithJWT 测试接口(GET)": "http://106.55.225.88:8020/jwt_text",
 	})
 }
 func login(ctx *gin.Context) {
@@ -42,6 +45,25 @@ func login(ctx *gin.Context) {
 
 	ctx.SetCookie("username", username, 60, "/", "", false, false)
 	tool.RespSuccessful(ctx)
+}
+func loginJWT(ctx *gin.Context) {
+	username := ctx.PostForm("username")
+	password := ctx.PostForm("password")
+	flag, err := service.IsPasswordCorrect(username, password)
+	if err != nil {
+		tool.RespInternalError(ctx)
+		fmt.Println("UserLogin is", err)
+		return
+	}
+	// 校验用户名和密码是否正确
+	if flag {
+		// 生成Token
+		tokenString, _ := tool.GenToken(username)
+		tool.RespSuccessfulWithData(ctx, tokenString)
+		return
+	}
+	tool.RespErrorWithData(ctx, "鉴权失败")
+	return
 }
 
 //注册
