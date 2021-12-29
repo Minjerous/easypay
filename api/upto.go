@@ -19,8 +19,11 @@ func topUp(ctx *gin.Context) {
 		return
 	}
 
-	iUsername, _ := ctx.Get("username")
-	username := iUsername.(string)
+	username, err := ctx.Cookie("username")
+	if err != nil {
+		tool.RespErrorWithData(ctx, "token有误")
+		fmt.Println(err)
+	}
 
 	txt := username + "充值了" + moneyNum + "元"
 	user := model.User{
@@ -53,5 +56,5 @@ func topUp(ctx *gin.Context) {
 		return
 	}
 
-	tool.RespSuccessful(ctx)
+	tool.RespSuccessfulWithData(ctx, "你成功充值"+moneyNum)
 }

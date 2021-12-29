@@ -21,8 +21,11 @@ func transfer(ctx *gin.Context) {
 		return
 	}
 
-	iUsername, _ := ctx.Get("username")
-	username := iUsername.(string)
+	username, err := ctx.Cookie("username")
+	if err != nil {
+		tool.RespErrorWithData(ctx, "token有误")
+		fmt.Println(err)
+	}
 
 	flag, err := service.IsMoneyEnough(money, username)
 	if err != nil {
@@ -87,5 +90,5 @@ func transfer(ctx *gin.Context) {
 		return
 	}
 
-	tool.RespSuccessfulWithData(ctx, "转账成功")
+	tool.RespSuccessfulWithData(ctx, "成功向"+name+"转账"+moneyNum)
 }

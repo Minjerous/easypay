@@ -27,39 +27,55 @@ func help(ctx *gin.Context) {
 		"help WithJWT 测试接口(GET)": "http://106.55.225.88:8020/jwt_text",
 	})
 }
-func login(ctx *gin.Context) {
-	username := ctx.PostForm("username")
-	password := ctx.PostForm("password")
 
-	flag, err := service.IsPasswordCorrect(username, password)
-	if err != nil {
-		fmt.Println("judge password correct err: ", err)
-		tool.RespInternalError(ctx)
-		return
-	}
+//func login(ctx *gin.Context) {
+//	username := ctx.PostForm("username")
+//	password := ctx.PostForm("password")
+//
+//	flag, err := service.IsPasswordCorrect(username, password)
+//	if err != nil {
+//		fmt.Println("judge password correct err: ", err)
+//		tool.RespInternalError(ctx)
+//		return
+//	}
+//
+//	if !flag {
+//		tool.RespErrorWithData(ctx, "密码错误")
+//		return
+//	}
+//
+//	ctx.SetCookie("username", username, 60, "/", "", false, false)
+//	tool.RespSuccessful(ctx)
+//}
 
-	if !flag {
-		tool.RespErrorWithData(ctx, "密码错误")
-		return
-	}
-
-	ctx.SetCookie("username", username, 60, "/", "", false, false)
-	tool.RespSuccessful(ctx)
-}
+//带j
 func loginJWT(ctx *gin.Context) {
-	username := ctx.PostForm("username")
-	password := ctx.PostForm("password")
-	flag, err := service.IsPasswordCorrect(username, password)
+	user := model.User{
+		Username: ctx.PostForm("username"),
+		Password: ctx.PostForm("password"),
+	}
+
+	flag, err := service.IsPasswordCorrect(user.Username, user.Password)
 	if err != nil {
 		tool.RespInternalError(ctx)
 		fmt.Println("UserLogin is", err)
 		return
 	}
+	if !flag {
+		tool.RespErrorWithData(ctx, "密码错误")
+		return
+	}
 	// 校验用户名和密码是否正确
 	if flag {
 		// 生成Token
-		tokenString, _ := tool.GenToken(username)
-		tool.RespSuccessfulWithData(ctx, tokenString)
+		tokenString, err1 := tool.SetToken(ctx, user.Username)
+		if err1 != nil {
+			tool.RespErrorWithData(ctx, "鉴权失败")
+			fmt.Println(err)
+		}
+		ctx.SetCookie("username", user.Username, 3600, "/", "", false, true)
+		ctx.SetCookie("jwt", tokenString, 3600, "/", "", false, true)
+		tool.RespSuccessfulWithData(ctx, "欢迎登入")
 		return
 	}
 	tool.RespErrorWithData(ctx, "鉴权失败")
@@ -113,8 +129,11 @@ func register(ctx *gin.Context) {
 
 //查询和特定对象的交易  若没有权限则查询失败
 func getRecordWithPeople(ctx *gin.Context) {
-	iUsername, _ := ctx.Get("username")
-	username := iUsername.(string)
+	username, err := ctx.Cookie("username")
+	if err != nil {
+		tool.RespErrorWithData(ctx, "token有误")
+		fmt.Println(err)
+	}
 	Id, err := service.SelectIdByUsername(username)
 
 	if err != nil {
@@ -139,8 +158,11 @@ func getRecordWithPeople(ctx *gin.Context) {
 	tool.RespSuccessfulWithData(ctx, record)
 }
 func getRecord(ctx *gin.Context) {
-	iUsername, _ := ctx.Get("username")
-	username := iUsername.(string)
+	username, err := ctx.Cookie("username")
+	if err != nil {
+		tool.RespErrorWithData(ctx, "token有误")
+		fmt.Println(err)
+	}
 	Id, err := dao.SelectIdByUsername(username)
 	if err != nil {
 		tool.RespInternalError(ctx)
@@ -158,8 +180,11 @@ func getRecord(ctx *gin.Context) {
 
 //查询余额
 func getMoney(ctx *gin.Context) {
-	iUsername, _ := ctx.Get("username")
-	username := iUsername.(string)
+	username, err := ctx.Cookie("username")
+	if err != nil {
+		tool.RespErrorWithData(ctx, "token有误")
+		fmt.Println(err)
+	}
 	money, err := service.SelectMoneyByName(username)
 	if err != nil {
 		fmt.Print(err)
@@ -172,6 +197,15 @@ func getMoney(ctx *gin.Context) {
 }
 func changePassword(ctx *gin.Context) {
 	username := ctx.PostForm("username")
+	userName, err := ctx.Cookie("username")
+	if err != nil {
+		tool.RespErrorWithData(ctx, "token有误")
+		fmt.Println(err)
+	}
+	if userName != username {
+		tool.RespErrorWithData(ctx, "用户名有误")
+		return
+	}
 	password := ctx.PostForm("password")
 	FirstNewPassword := ctx.PostForm("newpasswordOne")
 	SecondNewPassword := ctx.PostForm("newpasswordTwo")

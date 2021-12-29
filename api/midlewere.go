@@ -1,46 +1,59 @@
 package api
 
 import (
+	"easypay/model"
 	"easypay/tool"
+	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"strings"
+	"time"
 )
 
-func auth(ctx *gin.Context) {
-	username, err := ctx.Cookie("username")
+var MySecret = []byte("ddzyyds")
+
+//JWTAuthMiddleware jwt鉴权
+func JWTAuthMiddleware(ctx *gin.Context) {
+	userName, _ := ctx.Cookie("username")
+
+	claim := model.MyClaims{
+		Username: userName,
+		StandardClaims: jwt.StandardClaims{
+			Issuer:    "easy_pay",
+			ExpiresAt: time.Now().Add(time.Second * 10).Unix(),
+		},
+	}
+	tokenString, err := ctx.Cookie("jwt")
 	if err != nil {
-		tool.RespErrorWithData(ctx, "请登陆后进行操作")
+		tool.RespErrorWithData(ctx, "您还没有登入")
 		ctx.Abort()
+		return
 	}
-	ctx.Set("username", username)
-	ctx.Next()
-}
 
-func JWTAuthMiddleware() func(c *gin.Context) {
-	return func(c *gin.Context) {
+	//解析
+	token, err := jwt.ParseWithClaims(tokenString, &claim, func(token *jwt.Token) (interface{}, error) {
+		return MySecret, nil
+	})
 
-		authHeader := c.Request.Header.Get("Authorization")
-		if authHeader == "" {
-			tool.RespErrorWithData(c, "请求头中auth为空")
-			c.Abort()
+	if token.Valid {
+		ctx.JSON(200, gin.H{
+			"您好！": userName,
+		})
+		return
+	} else if ve, ok := err.(*jwt.ValidationError); ok {
+		if ve.Errors&jwt.ValidationErrorMalformed != 0 {
+			tool.RespErrorWithData(ctx, "token格式有误")
+			fmt.Println(err)
+			ctx.Abort()
 			return
-		}
-		// 按空格分割
-		parts := strings.SplitN(authHeader, " ", 2)
-		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			tool.RespErrorWithData(c, "请求头中auth格式有误")
-			c.Abort()
+		} else if ve.Errors&(jwt.ValidationErrorExpired|jwt.ValidationErrorNotValidYet) != 0 {
+			tool.RespErrorWithData(ctx, "验证已过期！")
+			fmt.Println(err)
+			ctx.Abort()
 			return
+		} else {
+			tool.RespErrorWithData(ctx, "签证失败")
 		}
-
-		user, err := tool.ParseToken(parts[1])
-		if err != nil {
-			tool.RespErrorWithData(c, "无效的Token")
-			c.Abort()
-			return
-		}
-
-		c.Set("username", user.Username)
-		c.Next()
 	}
+	tool.RespErrorWithData(ctx, "签证失败")
+	fmt.Println(err)
 }
