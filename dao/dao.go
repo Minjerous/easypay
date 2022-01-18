@@ -10,7 +10,7 @@ const (
 	driver   = "mysql"
 	username = "easypay"
 	password = "123456"
-	host     = "106.55.225.88"
+	host     = "00000000"
 	port     = "3306"
 	database = "easypay"
 	charset  = "utf8"
